@@ -41,6 +41,74 @@ app.use("/", gamesRouter);
 app.use("/genres", genresRouter);
 app.use("/publishers", publishersRouter);
 
+// Middleware pour gérer différentes erreurs HTTP
+// À placer avant le middleware 404 existant
+
+// 301 - Redirection permanente (généralement utilisé pour des redirections spécifiques)
+app.get("/old-route", (req, res) => {
+  res.status(301).redirect("/new-route");
+});
+
+// 400 - Bad Request
+app.use((req, res, next) => {
+  if (req.query.error === "bad-request") {
+    return res.status(400).render("error", {
+      title: "Requête invalide",
+      status: 400,
+      message: "La requête envoyée est mal formée ou invalide."
+    });
+  }
+  next();
+});
+
+// 401 - Non autorisé (authentification requise)
+app.get("/protected-route", (req, res) => {
+  const isAuthenticated = false; // Logique d'authentification ici
+  
+  if (!isAuthenticated) {
+    return res.status(401).render("error", {
+      title: "Non autorisé",
+      status: 401,
+      message: "Vous devez être authentifié pour accéder à cette ressource."
+    });
+  }
+  res.send("Contenu protégé");
+});
+
+// 403 - Interdit (accès refusé)
+app.get("/forbidden-route", (req, res) => {
+  const hasPermission = false; // Logique de permissions ici
+  
+  if (!hasPermission) {
+    return res.status(403).render("error", {
+      title: "Accès interdit",
+      status: 403,
+      message: "Vous n'avez pas les permissions nécessaires pour accéder à cette ressource."
+    });
+  }
+  res.send("Contenu autorisé");
+});
+
+// 404 (déjà existant dans votre code)
+app.use((req, res) => {
+  res.status(404).render("error", {
+    title: "Page introuvable",
+    status: 404,
+    message: `La ressource ${req.originalUrl} est introuvable.`
+  });
+});
+
+// Erreurs serveur (déjà existant)
+app.use((err, req, res, next) => {
+  console.error("Erreur serveur :", err);
+  res.status(err.status || 500).render("error", {
+    title: "Erreur serveur",
+    status: err.status || 500,
+    message: err.message || "Une erreur est survenue."
+  });
+});
+
+
 // Avant d'écouter, s'assurer que les genres existent
 async function start() {
   try {
